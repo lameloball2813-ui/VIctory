@@ -230,8 +230,15 @@ struct Lower<'a> {
 /// zeros) can make that four billion iterations, which hangs the host GPU
 /// until the driver resets it. A lane that reaches the limit leaves the
 /// program as killed (a pixel discards).
+///
+/// 2^16, not more: the limit is per lane, and a runaway loop in every lane
+/// of one dispatch must stay under the host's ~2 s timeout. At 2^20, compute
+/// `eeed82b877b44b5f` in Grand Theft Auto VI's world (12 groups of 1,024
+/// lanes) ran a ~6 s submission and the driver removed the device, on an
+/// RTX 5060 Ti a few minutes into every run; at 2^16 the same submission
+/// took ~0.4 s and five minutes in the world ran without a removal.
 // shortcut: a genuine loop of more iterations than this is cut short too.
-pub(super) const LOOP_LIMIT: u32 = 1 << 20;
+pub(super) const LOOP_LIMIT: u32 = 1 << 16;
 
 /// Lane masks read as numbers (`s_bcnt1`, `s_ff1`, `v_mbcnt`, scalar
 /// compares, bit tests) are ballots of the lanes' booleans, taken where the
